@@ -28,9 +28,16 @@ export const StudentView = {
     });
   },
 
+  clearAllTimers() {
+    if (this.autoAdvanceTimer) { clearTimeout(this.autoAdvanceTimer); this.autoAdvanceTimer = null; }
+    if (this.quizAdvanceTimer) { clearTimeout(this.quizAdvanceTimer); this.quizAdvanceTimer = null; }
+    if (this.identAdvanceTimer) { clearTimeout(this.identAdvanceTimer); this.identAdvanceTimer = null; }
+    if (this.corrAdvanceTimer) { clearTimeout(this.corrAdvanceTimer); this.corrAdvanceTimer = null; }
+  },
+
   switchTab(tabId) {
+    this.clearAllTimers();
     this.activeTab = tabId;
-    this.currentExerciseIndex = 0;
     this.renderTabsNav();
     this.renderActiveTab();
   },
@@ -270,16 +277,22 @@ export const StudentView = {
         <!-- Feedback Dinâmico Inteligente -->
         <div id="feedback-display-area" class="feedback-container"></div>
 
-        <!-- Barra de Ações -->
+        <!-- Barra de Ações com Navegação Completa -->
         <div class="exercise-action-buttons">
-          <button class="btn btn-secondary" id="btn-reset-words">
-            🔄 Limpar / Recomeçar
+          <button class="btn btn-secondary" id="btn-prev-exercise" title="Voltar para a frase anterior">
+            ⬅ Frase Anterior
           </button>
-          <button class="btn btn-outline" id="btn-show-hint">
+          <button class="btn btn-secondary" id="btn-reset-words" title="Desfazer e recomeçar esta frase">
+            🔄 Limpar
+          </button>
+          <button class="btn btn-outline" id="btn-show-hint" title="Ver dica sobre o sujeito ou verbo">
             💡 Ver Dica
           </button>
-          <button class="btn btn-primary btn-large" id="btn-verify-ordering">
+          <button class="btn btn-primary btn-large" id="btn-verify-ordering" title="Verificar a frase organizada">
             ✓ Verificar Frase
+          </button>
+          <button class="btn btn-accent" id="btn-skip-exercise" title="Avançar para a próxima frase">
+            Próxima Frase ➔
           </button>
         </div>
       </div>
@@ -289,13 +302,49 @@ export const StudentView = {
     this.bindOrderingInteractions(ex, container);
   },
 
+  goToNextExercise(container) {
+    if (this.autoAdvanceTimer) {
+      clearTimeout(this.autoAdvanceTimer);
+      this.autoAdvanceTimer = null;
+    }
+    sound.playClick();
+    this.isAlreadyCorrect = false;
+    this.currentExerciseIndex = (this.currentExerciseIndex + 1) % this.currentExercisesList.length;
+    this.currentExIdLoaded = null;
+    this.renderOrderingModule(container);
+  },
+
+  goToPrevExercise(container) {
+    if (this.autoAdvanceTimer) {
+      clearTimeout(this.autoAdvanceTimer);
+      this.autoAdvanceTimer = null;
+    }
+    sound.playClick();
+    this.isAlreadyCorrect = false;
+    this.currentExerciseIndex = (this.currentExerciseIndex - 1 + this.currentExercisesList.length) % this.currentExercisesList.length;
+    this.currentExIdLoaded = null;
+    this.renderOrderingModule(container);
+  },
+
   bindOrderingInteractions(ex, container) {
     // Filtro de nível
     document.getElementById("level-select")?.addEventListener("change", (e) => {
+      if (this.autoAdvanceTimer) clearTimeout(this.autoAdvanceTimer);
       this.currentLevelFilter = e.target.value;
       this.currentExerciseIndex = 0;
       this.currentExIdLoaded = null;
+      this.isAlreadyCorrect = false;
       this.renderOrderingModule(container);
+    });
+
+    // Navegação direta: Próxima Frase
+    document.getElementById("btn-skip-exercise")?.addEventListener("click", () => {
+      this.goToNextExercise(container);
+    });
+
+    // Navegação direta: Frase Anterior
+    document.getElementById("btn-prev-exercise")?.addEventListener("click", () => {
+      this.goToPrevExercise(container);
     });
 
     // Clique no banco de palavras -> move para a frase
@@ -339,6 +388,7 @@ export const StudentView = {
       sound.playUndo();
       this.bankWords = this.shuffleArray([...ex.words]);
       this.selectedWords = [];
+      this.isAlreadyCorrect = false;
       this.renderOrderingModule(container);
     });
 
@@ -360,6 +410,12 @@ export const StudentView = {
 
     // Verificar Frase
     document.getElementById("btn-verify-ordering")?.addEventListener("click", () => {
+      // Se a frase já estava certa e o aluno clicou de novo em verificar, avança direto!
+      if (this.isAlreadyCorrect) {
+        this.goToNextExercise(container);
+        return;
+      }
+
       const evaluation = GrammarEngine.evaluateOrdering(this.selectedWords, ex);
       this.displayEvaluationFeedback(evaluation, ex, container);
     });
@@ -374,6 +430,7 @@ export const StudentView = {
     if (evaluation.isCorrect) {
       sound.playSuccess();
       this.triggerConfetti();
+      this.isAlreadyCorrect = true;
 
       store.recordAttempt(
         student.id,
@@ -391,25 +448,40 @@ export const StudentView = {
             <h4>${evaluation.title}</h4>
             <p>${evaluation.message}</p>
             <div class="feedback-extra-points">
-              <span>+${evaluation.score} Pontos Conquistados!</span>
+              <span>+${evaluation.score} Pontos Conquistados! ⭐</span>
             </div>
+            <p class="auto-advance-msg" style="margin-top: 0.6rem; font-weight: 600; color: #047857;">
+              ⏳ Avançando para a próxima frase em 2 segundos...
+            </p>
             <div class="fb-actions">
               <button class="btn btn-accent btn-large" id="btn-next-exercise">
-                Próximo Exercício ➔
+                Próxima Frase Agora ➔
               </button>
             </div>
           </div>
         </div>
       `;
 
+      // Atualiza o texto do botão principal para indicar avanço
+      const verifyBtn = document.getElementById("btn-verify-ordering");
+      if (verifyBtn) {
+        verifyBtn.innerHTML = "Próxima Frase ➔";
+        verifyBtn.classList.remove("btn-primary");
+        verifyBtn.classList.add("btn-accent");
+      }
+
+      // Transição automática para a próxima frase em 2.2 segundos
+      if (this.autoAdvanceTimer) clearTimeout(this.autoAdvanceTimer);
+      this.autoAdvanceTimer = setTimeout(() => {
+        this.goToNextExercise(container);
+      }, 2200);
+
       document.getElementById("btn-next-exercise")?.addEventListener("click", () => {
-        sound.playClick();
-        this.currentExerciseIndex = (this.currentExerciseIndex + 1) % this.currentExercisesList.length;
-        this.currentExIdLoaded = null;
-        this.renderOrderingModule(container);
+        this.goToNextExercise(container);
       });
     } else {
       sound.playError();
+      this.isAlreadyCorrect = false;
 
       store.recordAttempt(
         student.id,
@@ -589,6 +661,11 @@ export const StudentView = {
   // 3. MÓDULO: IDENTIFICAÇÃO DE ELEMENTOS (DETETIVE)
   // ==========================================
   renderIdentificationModule(container) {
+    if (this.identAdvanceTimer) {
+      clearTimeout(this.identAdvanceTimer);
+      this.identAdvanceTimer = null;
+    }
+
     const exercises = store.getAllExercises().filter(e => e.type === "identificacao");
 
     if (exercises.length === 0) {
@@ -596,11 +673,11 @@ export const StudentView = {
       return;
     }
 
-    if (this.currentExerciseIndex >= exercises.length) {
-      this.currentExerciseIndex = 0;
+    if (this.currentIdentIndex === undefined || this.currentIdentIndex >= exercises.length) {
+      this.currentIdentIndex = 0;
     }
 
-    const ex = exercises[this.currentExerciseIndex];
+    const ex = exercises[this.currentIdentIndex];
 
     container.innerHTML = `
       <div class="exercise-card anim-fade-in">
@@ -611,7 +688,7 @@ export const StudentView = {
             <span class="points-badge">+${ex.points || 10} Pontos</span>
           </div>
           <div class="exercise-counter">
-            Exercício ${this.currentExerciseIndex + 1} de ${exercises.length}
+            Desafio <strong>${this.currentIdentIndex + 1}</strong> de <strong>${exercises.length}</strong>
           </div>
         </div>
 
@@ -637,11 +714,44 @@ export const StudentView = {
         </div>
 
         <div id="ident-feedback-area" class="feedback-container"></div>
+
+        <!-- Barra de Navegação -->
+        <div class="exercise-action-buttons">
+          <button class="btn btn-secondary" id="btn-prev-ident" title="Desafio anterior">
+            ⬅ Desafio Anterior
+          </button>
+          <button class="btn btn-outline" id="btn-skip-ident" title="Pular para o próximo desafio">
+            Próximo Desafio ➔
+          </button>
+        </div>
       </div>
     `;
 
+    document.getElementById("btn-prev-ident")?.addEventListener("click", () => {
+      if (this.identAdvanceTimer) clearTimeout(this.identAdvanceTimer);
+      sound.playClick();
+      this.currentIdentIndex = (this.currentIdentIndex - 1 + exercises.length) % exercises.length;
+      this.renderIdentificationModule(container);
+    });
+
+    document.getElementById("btn-skip-ident")?.addEventListener("click", () => {
+      if (this.identAdvanceTimer) clearTimeout(this.identAdvanceTimer);
+      sound.playClick();
+      this.currentIdentIndex = (this.currentIdentIndex + 1) % exercises.length;
+      this.renderIdentificationModule(container);
+    });
+
+    let answered = false;
     container.querySelectorAll(".ident-option-card").forEach(btn => {
       btn.addEventListener("click", () => {
+        if (answered) return;
+        answered = true;
+
+        container.querySelectorAll(".ident-option-card").forEach(b => {
+          b.disabled = true;
+          b.style.cursor = "default";
+        });
+
         const selected = btn.dataset.option;
         const evaluation = GrammarEngine.evaluateIdentification(selected, ex);
         const fbArea = document.getElementById("ident-feedback-area");
@@ -667,20 +777,34 @@ export const StudentView = {
                     <span class="pill-role role-predicado">Predicado: ${evaluation.details.predicado}</span>
                   </div>
                 ` : ""}
+                <p class="auto-advance-msg" style="margin-top: 0.6rem; font-weight: 600; color: #047857;">
+                  ⏳ Próximo desafio em 2 segundos...
+                </p>
                 <div class="fb-actions">
-                  <button class="btn btn-accent" id="btn-next-ident">Próximo Desafio ➔</button>
+                  <button class="btn btn-accent btn-large" id="btn-next-ident">Próximo Desafio Agora ➔</button>
                 </div>
               </div>
             </div>
           `;
 
+          this.identAdvanceTimer = setTimeout(() => {
+            this.currentIdentIndex = (this.currentIdentIndex + 1) % exercises.length;
+            this.renderIdentificationModule(container);
+          }, 2200);
+
           document.getElementById("btn-next-ident")?.addEventListener("click", () => {
-            this.currentExerciseIndex = (this.currentExerciseIndex + 1) % exercises.length;
+            if (this.identAdvanceTimer) clearTimeout(this.identAdvanceTimer);
+            sound.playClick();
+            this.currentIdentIndex = (this.currentIdentIndex + 1) % exercises.length;
             this.renderIdentificationModule(container);
           });
         } else {
           sound.playError();
           btn.classList.add("wrong-highlight");
+
+          // Destaca a opção correta
+          const correctBtn = container.querySelector(`.ident-option-card[data-option="${ex.correctOption}"]`);
+          if (correctBtn) correctBtn.classList.add("correct-highlight");
 
           store.recordAttempt(student.id, ex.id, false, 0, selected, evaluation.mistakeCategory);
 
@@ -690,9 +814,34 @@ export const StudentView = {
               <div class="fb-content">
                 <h4>${evaluation.title}</h4>
                 <p>${evaluation.message}</p>
+                <p class="auto-advance-msg" style="margin-top: 0.6rem; font-weight: 600; color: #B91C1C;">
+                  ⏳ Avançando para o próximo desafio em 3 segundos...
+                </p>
+                <div class="fb-actions" style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+                  <button class="btn btn-primary" id="btn-next-ident">Próximo Desafio Agora ➔</button>
+                  <button class="btn btn-secondary" id="btn-retry-ident">Tentar Novamente</button>
+                </div>
               </div>
             </div>
           `;
+
+          this.identAdvanceTimer = setTimeout(() => {
+            this.currentIdentIndex = (this.currentIdentIndex + 1) % exercises.length;
+            this.renderIdentificationModule(container);
+          }, 3200);
+
+          document.getElementById("btn-next-ident")?.addEventListener("click", () => {
+            if (this.identAdvanceTimer) clearTimeout(this.identAdvanceTimer);
+            sound.playClick();
+            this.currentIdentIndex = (this.currentIdentIndex + 1) % exercises.length;
+            this.renderIdentificationModule(container);
+          });
+
+          document.getElementById("btn-retry-ident")?.addEventListener("click", () => {
+            if (this.identAdvanceTimer) clearTimeout(this.identAdvanceTimer);
+            sound.playClick();
+            this.renderIdentificationModule(container);
+          });
         }
       });
     });
@@ -702,6 +851,11 @@ export const StudentView = {
   // 4. MÓDULO: CORREÇÃO E CONSTRUÇÃO (DESAFIO DO EDITOR)
   // ==========================================
   renderCorrectionModule(container) {
+    if (this.corrAdvanceTimer) {
+      clearTimeout(this.corrAdvanceTimer);
+      this.corrAdvanceTimer = null;
+    }
+
     const exercises = store.getAllExercises().filter(e => e.type === "correcao");
 
     if (exercises.length === 0) {
@@ -709,11 +863,11 @@ export const StudentView = {
       return;
     }
 
-    if (this.currentExerciseIndex >= exercises.length) {
-      this.currentExerciseIndex = 0;
+    if (this.currentCorrIndex === undefined || this.currentCorrIndex >= exercises.length) {
+      this.currentCorrIndex = 0;
     }
 
-    const ex = exercises[this.currentExerciseIndex];
+    const ex = exercises[this.currentCorrIndex];
 
     container.innerHTML = `
       <div class="exercise-card anim-fade-in">
@@ -724,7 +878,7 @@ export const StudentView = {
             <span class="points-badge">+${ex.points || 15} Pontos</span>
           </div>
           <div class="exercise-counter">
-            Exercício ${this.currentExerciseIndex + 1} de ${exercises.length}
+            Exercício <strong>${this.currentCorrIndex + 1}</strong> de <strong>${exercises.length}</strong>
           </div>
         </div>
 
@@ -751,11 +905,44 @@ export const StudentView = {
         </div>
 
         <div id="correction-feedback-area" class="feedback-container"></div>
+
+        <!-- Barra de Navegação -->
+        <div class="exercise-action-buttons">
+          <button class="btn btn-secondary" id="btn-prev-corr" title="Correção anterior">
+            ⬅ Correção Anterior
+          </button>
+          <button class="btn btn-outline" id="btn-skip-corr" title="Pular para a próxima correção">
+            Próxima Correção ➔
+          </button>
+        </div>
       </div>
     `;
 
+    document.getElementById("btn-prev-corr")?.addEventListener("click", () => {
+      if (this.corrAdvanceTimer) clearTimeout(this.corrAdvanceTimer);
+      sound.playClick();
+      this.currentCorrIndex = (this.currentCorrIndex - 1 + exercises.length) % exercises.length;
+      this.renderCorrectionModule(container);
+    });
+
+    document.getElementById("btn-skip-corr")?.addEventListener("click", () => {
+      if (this.corrAdvanceTimer) clearTimeout(this.corrAdvanceTimer);
+      sound.playClick();
+      this.currentCorrIndex = (this.currentCorrIndex + 1) % exercises.length;
+      this.renderCorrectionModule(container);
+    });
+
+    let answered = false;
     container.querySelectorAll(".quiz-option-btn").forEach(btn => {
       btn.addEventListener("click", () => {
+        if (answered) return;
+        answered = true;
+
+        container.querySelectorAll(".quiz-option-btn").forEach(b => {
+          b.disabled = true;
+          b.style.cursor = "default";
+        });
+
         const idx = parseInt(btn.dataset.optIdx, 10);
         const evaluation = GrammarEngine.evaluateQuiz(idx, ex);
         const fbArea = document.getElementById("correction-feedback-area");
@@ -774,20 +961,33 @@ export const StudentView = {
               <div class="fb-content">
                 <h4>${evaluation.title}</h4>
                 <p>${evaluation.message}</p>
+                <p class="auto-advance-msg" style="margin-top: 0.6rem; font-weight: 600; color: #047857;">
+                  ⏳ Próxima correção em 2 segundos...
+                </p>
                 <div class="fb-actions">
-                  <button class="btn btn-accent" id="btn-next-corr">Próxima Correção ➔</button>
+                  <button class="btn btn-accent btn-large" id="btn-next-corr">Próxima Correção Agora ➔</button>
                 </div>
               </div>
             </div>
           `;
 
+          this.corrAdvanceTimer = setTimeout(() => {
+            this.currentCorrIndex = (this.currentCorrIndex + 1) % exercises.length;
+            this.renderCorrectionModule(container);
+          }, 2200);
+
           document.getElementById("btn-next-corr")?.addEventListener("click", () => {
-            this.currentExerciseIndex = (this.currentExerciseIndex + 1) % exercises.length;
+            if (this.corrAdvanceTimer) clearTimeout(this.corrAdvanceTimer);
+            sound.playClick();
+            this.currentCorrIndex = (this.currentCorrIndex + 1) % exercises.length;
             this.renderCorrectionModule(container);
           });
         } else {
           sound.playError();
           btn.classList.add("wrong-highlight");
+
+          const correctBtn = container.querySelector(`.quiz-option-btn[data-opt-idx="${ex.correctIndex}"]`);
+          if (correctBtn) correctBtn.classList.add("correct-highlight");
 
           store.recordAttempt(student.id, ex.id, false, 0, ex.options[idx], evaluation.mistakeCategory);
 
@@ -797,9 +997,34 @@ export const StudentView = {
               <div class="fb-content">
                 <h4>${evaluation.title}</h4>
                 <p>${evaluation.message}</p>
+                <p class="auto-advance-msg" style="margin-top: 0.6rem; font-weight: 600; color: #B91C1C;">
+                  ⏳ Avançando para a próxima correção em 3 segundos...
+                </p>
+                <div class="fb-actions" style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+                  <button class="btn btn-primary" id="btn-next-corr">Próxima Correção Agora ➔</button>
+                  <button class="btn btn-secondary" id="btn-retry-corr">Tentar Novamente</button>
+                </div>
               </div>
             </div>
           `;
+
+          this.corrAdvanceTimer = setTimeout(() => {
+            this.currentCorrIndex = (this.currentCorrIndex + 1) % exercises.length;
+            this.renderCorrectionModule(container);
+          }, 3200);
+
+          document.getElementById("btn-next-corr")?.addEventListener("click", () => {
+            if (this.corrAdvanceTimer) clearTimeout(this.corrAdvanceTimer);
+            sound.playClick();
+            this.currentCorrIndex = (this.currentCorrIndex + 1) % exercises.length;
+            this.renderCorrectionModule(container);
+          });
+
+          document.getElementById("btn-retry-corr")?.addEventListener("click", () => {
+            if (this.corrAdvanceTimer) clearTimeout(this.corrAdvanceTimer);
+            sound.playClick();
+            this.renderCorrectionModule(container);
+          });
         }
       });
     });
@@ -809,6 +1034,11 @@ export const StudentView = {
   // 5. MÓDULO: QUIZ DE ESCOLHA MÚLTIPLA
   // ==========================================
   renderQuizModule(container) {
+    if (this.quizAdvanceTimer) {
+      clearTimeout(this.quizAdvanceTimer);
+      this.quizAdvanceTimer = null;
+    }
+
     const exercises = store.getAllExercises().filter(e => e.type === "quiz");
 
     if (exercises.length === 0) {
@@ -816,11 +1046,11 @@ export const StudentView = {
       return;
     }
 
-    if (this.currentExerciseIndex >= exercises.length) {
-      this.currentExerciseIndex = 0;
+    if (this.currentQuizIndex === undefined || this.currentQuizIndex >= exercises.length) {
+      this.currentQuizIndex = 0;
     }
 
-    const ex = exercises[this.currentExerciseIndex];
+    const ex = exercises[this.currentQuizIndex];
 
     container.innerHTML = `
       <div class="exercise-card anim-fade-in">
@@ -831,7 +1061,7 @@ export const StudentView = {
             <span class="points-badge">+${ex.points || 10} Pontos</span>
           </div>
           <div class="exercise-counter">
-            Questão ${this.currentExerciseIndex + 1} de ${exercises.length}
+            Questão <strong>${this.currentQuizIndex + 1}</strong> de <strong>${exercises.length}</strong>
           </div>
         </div>
 
@@ -852,11 +1082,44 @@ export const StudentView = {
         </div>
 
         <div id="quiz-feedback-area" class="feedback-container"></div>
+
+        <!-- Barra de Navegação do Quiz -->
+        <div class="exercise-action-buttons">
+          <button class="btn btn-secondary" id="btn-prev-quiz" title="Pergunta anterior">
+            ⬅ Pergunta Anterior
+          </button>
+          <button class="btn btn-outline" id="btn-skip-quiz" title="Pular para a próxima pergunta">
+            Próxima Pergunta ➔
+          </button>
+        </div>
       </div>
     `;
 
+    document.getElementById("btn-prev-quiz")?.addEventListener("click", () => {
+      if (this.quizAdvanceTimer) clearTimeout(this.quizAdvanceTimer);
+      sound.playClick();
+      this.currentQuizIndex = (this.currentQuizIndex - 1 + exercises.length) % exercises.length;
+      this.renderQuizModule(container);
+    });
+
+    document.getElementById("btn-skip-quiz")?.addEventListener("click", () => {
+      if (this.quizAdvanceTimer) clearTimeout(this.quizAdvanceTimer);
+      sound.playClick();
+      this.currentQuizIndex = (this.currentQuizIndex + 1) % exercises.length;
+      this.renderQuizModule(container);
+    });
+
+    let answered = false;
     container.querySelectorAll(".quiz-option-btn").forEach(btn => {
       btn.addEventListener("click", () => {
+        if (answered) return;
+        answered = true;
+
+        container.querySelectorAll(".quiz-option-btn").forEach(b => {
+          b.disabled = true;
+          b.style.cursor = "default";
+        });
+
         const idx = parseInt(btn.dataset.optIdx, 10);
         const evaluation = GrammarEngine.evaluateQuiz(idx, ex);
         const fbArea = document.getElementById("quiz-feedback-area");
@@ -875,20 +1138,34 @@ export const StudentView = {
               <div class="fb-content">
                 <h4>${evaluation.title}</h4>
                 <p>${evaluation.message}</p>
+                <p class="auto-advance-msg" style="margin-top: 0.6rem; font-weight: 600; color: #047857;">
+                  ⏳ Próxima pergunta em 2 segundos...
+                </p>
                 <div class="fb-actions">
-                  <button class="btn btn-accent" id="btn-next-quiz">Próxima Pergunta ➔</button>
+                  <button class="btn btn-accent btn-large" id="btn-next-quiz">Próxima Pergunta Agora ➔</button>
                 </div>
               </div>
             </div>
           `;
 
+          this.quizAdvanceTimer = setTimeout(() => {
+            this.currentQuizIndex = (this.currentQuizIndex + 1) % exercises.length;
+            this.renderQuizModule(container);
+          }, 2200);
+
           document.getElementById("btn-next-quiz")?.addEventListener("click", () => {
-            this.currentExerciseIndex = (this.currentExerciseIndex + 1) % exercises.length;
+            if (this.quizAdvanceTimer) clearTimeout(this.quizAdvanceTimer);
+            sound.playClick();
+            this.currentQuizIndex = (this.currentQuizIndex + 1) % exercises.length;
             this.renderQuizModule(container);
           });
         } else {
           sound.playError();
           btn.classList.add("wrong-highlight");
+
+          // Destaca a opção correta para o aluno aprender
+          const correctBtn = container.querySelector(`.quiz-option-btn[data-opt-idx="${ex.correctIndex}"]`);
+          if (correctBtn) correctBtn.classList.add("correct-highlight");
 
           store.recordAttempt(student.id, ex.id, false, 0, ex.options[idx], evaluation.mistakeCategory);
 
@@ -898,9 +1175,34 @@ export const StudentView = {
               <div class="fb-content">
                 <h4>${evaluation.title}</h4>
                 <p>${evaluation.message}</p>
+                <p class="auto-advance-msg" style="margin-top: 0.6rem; font-weight: 600; color: #B91C1C;">
+                  ⏳ Avançando para a próxima pergunta em 3 segundos...
+                </p>
+                <div class="fb-actions" style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+                  <button class="btn btn-primary" id="btn-next-quiz">Próxima Pergunta Agora ➔</button>
+                  <button class="btn btn-secondary" id="btn-retry-quiz">Tentar Novamente</button>
+                </div>
               </div>
             </div>
           `;
+
+          this.quizAdvanceTimer = setTimeout(() => {
+            this.currentQuizIndex = (this.currentQuizIndex + 1) % exercises.length;
+            this.renderQuizModule(container);
+          }, 3200);
+
+          document.getElementById("btn-next-quiz")?.addEventListener("click", () => {
+            if (this.quizAdvanceTimer) clearTimeout(this.quizAdvanceTimer);
+            sound.playClick();
+            this.currentQuizIndex = (this.currentQuizIndex + 1) % exercises.length;
+            this.renderQuizModule(container);
+          });
+
+          document.getElementById("btn-retry-quiz")?.addEventListener("click", () => {
+            if (this.quizAdvanceTimer) clearTimeout(this.quizAdvanceTimer);
+            sound.playClick();
+            this.renderQuizModule(container);
+          });
         }
       });
     });

@@ -52,40 +52,28 @@ export const GrammarEngine = {
 
     assembled = this.normalizeText(assembled);
 
-    // Se o exercício tem pontuação no final e o aluno colocou sem pontuação, tenta normalizar
     const expected = this.normalizeText(exercise.expected);
     const alternatives = (exercise.validAlternatives || []).map(a => this.normalizeText(a));
-
     const allValidForms = [expected, ...alternatives];
 
-    // 1. Checagem exata direta
-    for (const valid of allValidForms) {
-      if (assembled.toLowerCase() === valid.toLowerCase()) {
-        // Checa maiúscula e pontuação precisa
-        const capitalOk = assembled.charAt(0) === assembled.charAt(0).toUpperCase();
-        const punctOk = /[.?!]$/.test(assembled);
+    // Verifica se as palavras fornecidas contêm pontuação explícita (?, !, .)
+    const wordsHaveTerminalPunct = (exercise.words || []).some(w => /[.?!]$/.test(w.trim()));
 
-        if (assembled === valid) {
-          return {
-            isCorrect: true,
-            score: exercise.points || 10,
-            feedbackType: "success",
-            title: "Excelente! Frase Perfeita!",
-            message: exercise.explanation || "Muito bem! A frase está organizada com coerência, inicial maiúscula e pontuação final correta.",
-            userSentence: assembled,
-            mistakeCategory: null
-          };
-        } else if (!capitalOk) {
-          return {
-            isCorrect: false,
-            score: Math.round((exercise.points || 10) * 0.5),
-            feedbackType: "warning",
-            title: "Atenção à Letra Maiúscula!",
-            message: `A ordem das palavras está correta, mas toda frase deve começar com letra MAIÚSCULA: '${assembled.charAt(0).toUpperCase() + assembled.slice(1)}'`,
-            userSentence: assembled,
-            mistakeCategory: "Maiúscula Inicial"
-          };
-        } else if (!punctOk && /[.?!]$/.test(valid)) {
+    // Função auxiliar para remover pontuação terminal na checagem estrutural
+    const stripEndPunct = (str) => str.replace(/[.,!?;:]+$/, "").trim();
+
+    const assembledClean = stripEndPunct(assembled);
+
+    // 1. Checagem contra cada forma válida aceitável
+    for (const valid of allValidForms) {
+      const validClean = stripEndPunct(valid);
+
+      // Compara a ordem das palavras desconsiderando maiúsculas temporariamente para diagnóstico
+      if (assembledClean.toLowerCase() === validClean.toLowerCase()) {
+        const capitalOk = assembled.charAt(0) === assembled.charAt(0).toUpperCase();
+
+        // Se o exercício tem pontuação explícita nas palavras, verifica se o aluno a colocou
+        if (wordsHaveTerminalPunct && /[.?!]$/.test(valid) && !/[.?!]$/.test(assembled)) {
           return {
             isCorrect: false,
             score: Math.round((exercise.points || 10) * 0.7),
@@ -96,14 +84,34 @@ export const GrammarEngine = {
             mistakeCategory: "Pontuação Final"
           };
         }
+
+        // Verifica se começou com maiúscula
+        if (!capitalOk) {
+          return {
+            isCorrect: false,
+            score: Math.round((exercise.points || 10) * 0.5),
+            feedbackType: "warning",
+            title: "Atenção à Letra Maiúscula!",
+            message: `A ordem das palavras está correta, mas toda frase deve começar com letra MAIÚSCULA: '${assembled.charAt(0).toUpperCase() + assembled.slice(1)}'`,
+            userSentence: assembled,
+            mistakeCategory: "Maiúscula Inicial"
+          };
+        }
+
+        // Frase totalmente correta!
+        return {
+          isCorrect: true,
+          score: exercise.points || 10,
+          feedbackType: "success",
+          title: "Excelente! Frase Perfeita!",
+          message: exercise.explanation || "Muito bem! A frase está organizada corretamente e com sentido completo.",
+          userSentence: assembled,
+          mistakeCategory: null
+        };
       }
     }
 
-    // 2. Análise diagnóstica detalhada de erro para auxílio pedagógico
-    const assembledNoPunct = this.stripTrailingPunctuation(assembled).toLowerCase();
-    const expectedNoPunct = this.stripTrailingPunctuation(expected).toLowerCase();
-
-    // Verificação de número de palavras
+    // 2. Análise diagnóstica de erro para auxílio pedagógico
     const totalWordsExpected = (exercise.words || []).length;
     if (studentWordsArr.length < totalWordsExpected) {
       return {
@@ -117,16 +125,13 @@ export const GrammarEngine = {
       };
     }
 
-    // Diagnóstico sintático inteligente
-    // Exemplo clássico do prompt: "estuda | Maria | todos | os dias"
-    // Se colocou "estuda Maria todos os dias", indicar quem pratica a ação
+    // Diagnóstico sintático inteligente de ordem
     let pedagogicalHelp = exercise.hint || "Tente novamente! Identifique primeiro quem pratica a ação e depois organize as restantes palavras.";
 
     const firstWord = studentWordsArr[0].toLowerCase();
-    const expectedFirstWord = expected.split(" ")[0].toLowerCase();
+    const expectedFirstWord = stripEndPunct(expected).split(" ")[0].toLowerCase();
 
     if (firstWord !== expectedFirstWord) {
-      // Se começou com verbo ou advérbio quando deveria ser o sujeito
       pedagogicalHelp = `Dica: Quem está praticando a ação nesta frase? Procure começar com o Sujeito da ação ou uma palavra iniciada com maiúscula.`;
     }
 

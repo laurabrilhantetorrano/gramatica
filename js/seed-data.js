@@ -519,6 +519,57 @@ export const INITIAL_EXERCISES = [
     hint: "Pergunte ao verbo: quem quebrou vários galhos durante a tempestade?",
     explanation: "Brilhante! 'O vento forte' praticou a ação de quebrar. 'Durante a tempestade' é adjunto adverbial de tempo.",
     points: 15
+  },
+  {
+    id: "ex-quiz-4",
+    type: "quiz",
+    level: "Fácil",
+    category: "Tipos de Frases",
+    prompt: "Qual das seguintes frases é uma frase EXCLAMATIVA?",
+    options: [
+      "Hoje está um dia ensolarado.",
+      "Você já terminou a lição de casa?",
+      "Que dia lindo e radiante nós tivemos hoje!",
+      "Nós não vamos sair de casa à tarde."
+    ],
+    correctIndex: 2,
+    hint: "Procure a frase que expressa entusiasmo, admiração ou emoção forte e termina com '!'.",
+    explanation: "Muito bem! Frases exclamativas exprimem estados emotivos (alegria, espanto, admiração) e utilizam ponto de exclamação (!).",
+    points: 10
+  },
+  {
+    id: "ex-quiz-5",
+    type: "quiz",
+    level: "Intermédio",
+    category: "Concordância Verbal",
+    prompt: "Qual das opções apresenta a concordância correta entre o sujeito e o verbo?",
+    options: [
+      "Nós fomos ao cinema assistir ao filme novo.",
+      "Nós foi ao cinema assistir ao filme novo.",
+      "Eles foi ao cinema assistir ao filme novo.",
+      "Eu fomos ao cinema assistir ao filme novo."
+    ],
+    correctIndex: 0,
+    hint: "O pronome 'Nós' (1ª pessoa do plural) combina com a forma verbal 'fomos'.",
+    explanation: "Exato! 'Nós fomos' está em perfeita harmonia de número (plural) e pessoa (1ª pessoa).",
+    points: 15
+  },
+  {
+    id: "ex-quiz-6",
+    type: "quiz",
+    level: "Avançado",
+    category: "Ordem das Palavras",
+    prompt: "Na frase 'Todos os dias, a professora corrige os cadernos.', qual é a função das palavras 'Todos os dias'?",
+    options: [
+      "É o sujeito da oração.",
+      "É um adjunto que indica tempo (quando a ação ocorre).",
+      "É o verbo principal da frase.",
+      "É o objeto direto."
+    ],
+    correctIndex: 1,
+    hint: "Observe que a expressão responde à pergunta 'Quando a professora corrige?'.",
+    explanation: "Correto! 'Todos os dias' é uma circunstância de tempo (adjunto adverbial de tempo) colocada no início da frase.",
+    points: 15
   }
 ];
 

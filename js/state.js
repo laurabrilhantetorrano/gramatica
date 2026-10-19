@@ -19,8 +19,25 @@ class Store {
 
   init() {
     // Carrega ou inicializa com dados de semente
-    if (!localStorage.getItem(STORAGE_KEYS.EXERCISES)) {
+    const storedExercises = localStorage.getItem(STORAGE_KEYS.EXERCISES);
+    if (!storedExercises) {
       localStorage.setItem(STORAGE_KEYS.EXERCISES, JSON.stringify(INITIAL_EXERCISES));
+    } else {
+      try {
+        const parsed = JSON.parse(storedExercises);
+        let updated = false;
+        INITIAL_EXERCISES.forEach(seedEx => {
+          if (!parsed.some(e => e.id === seedEx.id)) {
+            parsed.push(seedEx);
+            updated = true;
+          }
+        });
+        if (updated) {
+          localStorage.setItem(STORAGE_KEYS.EXERCISES, JSON.stringify(parsed));
+        }
+      } catch {
+        localStorage.setItem(STORAGE_KEYS.EXERCISES, JSON.stringify(INITIAL_EXERCISES));
+      }
     }
     if (!localStorage.getItem(STORAGE_KEYS.LESSONS)) {
       localStorage.setItem(STORAGE_KEYS.LESSONS, JSON.stringify(INITIAL_LESSONS));
