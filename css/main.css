@@ -1,0 +1,311 @@
+/* main.css - Sistema de Design, Variáveis e Layout Base */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Cores Principais */
+  --primary: #4F46E5;
+  --primary-hover: #4338CA;
+  --primary-light: #EEF2FF;
+  --primary-dark: #312E81;
+
+  --accent: #F59E0B;
+  --accent-hover: #D97706;
+  --accent-light: #FEF3C7;
+
+  --success: #10B981;
+  --success-dark: #059669;
+  --success-light: #D1FAE5;
+
+  --warning: #F97316;
+  --warning-light: #FFEDD5;
+
+  --danger: #EF4444;
+  --danger-light: #FEE2E2;
+
+  /* Papéis Sintáticos Gramaticais */
+  --role-sujeito: #0284C7;
+  --role-sujeito-bg: #E0F2FE;
+  --role-predicado: #059669;
+  --role-predicado-bg: #D1FAE5;
+  --role-verbo: #EA580C;
+  --role-verbo-bg: #FFEDD5;
+  --role-complemento: #7C3AED;
+  --role-complemento-bg: #EDE9FE;
+
+  /* Cores Neutras / Superfícies */
+  --bg-app: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-alt: #F1F5F9;
+  --border: #E2E8F0;
+  --border-strong: #CBD5E1;
+
+  --text-main: #0F172A;
+  --text-muted: #64748B;
+  --text-light: #94A3B8;
+
+  /* Tipografia */
+  --font-heading: 'Outfit', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+
+  /* Sombras e Elevação */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.2);
+
+  /* Bordas Arredondadas */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-full: 9999px;
+
+  /* Transições */
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reset e Configurações Globais */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--text-main);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+/* Topo / Barra de Navegação */
+.app-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+}
+
+.header-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.brand-logo-icon {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, var(--primary), #818CF8);
+  color: #FFFFFF;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+}
+
+.brand-info h1 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--primary-dark);
+  letter-spacing: -0.02em;
+}
+
+.brand-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary-light);
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-full);
+}
+
+/* Navegação e Troca de Papéis */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.role-switcher-toggle {
+  background: var(--surface-alt);
+  padding: 0.3rem;
+  border-radius: var(--radius-full);
+  display: flex;
+  gap: 0.25rem;
+  border: 1px solid var(--border);
+}
+
+.role-btn {
+  border: none;
+  background: transparent;
+  padding: 0.45rem 1.1rem;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.role-btn:hover {
+  color: var(--text-main);
+}
+
+.role-btn.active {
+  background: var(--primary);
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
+}
+
+.active-student-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--primary-light);
+  border: 1px solid #C7D2FE;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.active-student-chip:hover {
+  background: #E0E7FF;
+  transform: translateY(-1px);
+}
+
+.chip-avatar {
+  font-size: 1.1rem;
+}
+
+.chip-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--primary-dark);
+}
+
+.chip-score {
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--primary);
+  color: #FFFFFF;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-full);
+}
+
+.header-utility-btns {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-icon-toggle {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-icon-toggle:hover {
+  background: var(--surface);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.btn-icon-toggle.is-muted {
+  color: var(--danger);
+  border-color: #FECACA;
+  background: var(--danger-light);
+}
+
+/* Conteúdo Principal */
+.main-wrapper {
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+/* Rodapé */
+.app-footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 1.25rem 1.5rem;
+  margin-top: auto;
+}
+
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.footer-links {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.footer-links a, .footer-links button {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.footer-links a:hover, .footer-links button:hover {
+  text-decoration: underline;
+}
+
+/* Canvas de Confetes */
+#confetti-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+}

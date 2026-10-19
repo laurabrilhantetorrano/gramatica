@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Mini Sistema Educacional interativo de Gramática focado em Organização de Frases da Língua Portuguesa para apoio ao professor e aprendizagem dinâmica dos alunos.">
+  <meta name="theme-color" content="#4F46E5">
+  <title>Gramática Interativa — Organização de Frases | Mini Sistema Educacional</title>
+  
+  <!-- Estilos da Aplicação -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/student.css">
+  <link rel="stylesheet" href="css/teacher.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📘</text></svg>">
+</head>
+<body>
+  <!-- Canvas para Confetes Comemorativos -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Cabeçalho Principal e Navegação -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-section">
+        <div class="brand-logo-icon" aria-hidden="true">📘</div>
+        <div class="brand-info">
+          <h1>Gramática Interativa</h1>
+          <span class="brand-badge">Organização de Frases • Língua Portuguesa</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Alternador de Área (Aluno vs. Professor) -->
+        <nav class="role-switcher-toggle" aria-label="Seleção de perfil">
+          <button id="nav-role-student" class="role-btn active" title="Ir para a interface de estudos do aluno">
+            <span>🎒</span>
+            <span>Área do Aluno</span>
+          </button>
+          <button id="nav-role-teacher" class="role-btn" title="Ir para o painel pedagógico do professor">
+            <span>👨‍🏫</span>
+            <span>Área do Professor</span>
+          </button>
+        </nav>
+
+        <!-- Chip do Aluno Ativo -->
+        <div id="nav-active-student-chip" class="active-student-chip" title="Clique para trocar de aluno ou ver seu perfil">
+          <!-- Preenchido dinamicamente via JS -->
+        </div>
+
+        <!-- Botões Utilitários -->
+        <div class="header-utility-btns">
+          <button id="btn-toggle-sound" class="btn-icon-toggle" title="Ativar ou desativar efeitos sonoros">
+            🔊 Som Ativado
+          </button>
+          <button id="btn-about-system" class="btn-icon-toggle" title="Sobre este Mini Sistema Educacional">
+            ℹ️ Ajuda
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Conteúdo Principal da Aplicação -->
+  <main class="main-wrapper">
+    <!-- VISÃO 1: ÁREA DO ALUNO -->
+    <section id="student-app-view" class="app-view-container" aria-label="Área do Aluno">
+      <!-- Widget de Perfil, Pontos e Recado do Professor -->
+      <div id="student-header-widget"></div>
+
+      <!-- Barra de Navegação por Sub-abas do Aluno -->
+      <nav id="student-subtabs" class="subtabs-nav" aria-label="Módulos de aprendizado do aluno">
+        <!-- Renderizado dinamicamente pelo student-view.js -->
+      </nav>
+
+      <!-- Área de Conteúdo Ativo do Aluno -->
+      <div id="student-content-area"></div>
+    </section>
+
+    <!-- VISÃO 2: ÁREA DO PROFESSOR -->
+    <section id="teacher-app-view" class="app-view-container" style="display: none;" aria-label="Área do Professor">
+      <!-- Sub-abas do Professor -->
+      <nav id="teacher-subtabs" class="teacher-subtabs-nav" aria-label="Abas do painel pedagógico">
+        <!-- Renderizado dinamicamente pelo teacher-view.js -->
+      </nav>
+
+      <!-- Conteúdo do Painel do Professor -->
+      <div id="teacher-content-area"></div>
+    </section>
+  </main>
+
+  <!-- Rodapé Institucional -->
+  <footer class="app-footer">
+    <div class="footer-content">
+      <p>© 2026 <strong>Gramática Interativa</strong> — Mini Sistema Educacional para Ensino da Organização de Frases.</p>
+      <div class="footer-links">
+        <button id="footer-btn-about" onclick="document.getElementById('btn-about-system').click()">Sobre o Projeto</button>
+        <span>•</span>
+        <span>Língua Portuguesa 5º Ano</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal Global de Uso Geral (Aulas, Feedback, Criação de Atividades, Troca de Aluno) -->
+  <div id="general-modal" role="dialog" aria-modal="true"></div>
+
+  <!-- Scripts Modulares em Vanilla JS (ES6 Modules) -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
